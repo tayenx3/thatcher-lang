@@ -1,5 +1,5 @@
 # thatcher-lang
 > Thatcher - A simple, lightweight programming language that runs on the BEAM Virtual Machine and is transpiled to Erlang.
 
-# Prerequisites
+# Prerequisites (this will be most altered by the first release-candidate)
 > Erlang
