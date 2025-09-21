@@ -55,8 +55,32 @@ fn compile_file(program: &str, debug: bool, output: Option<&str>) -> Result<(), 
 
     let mut parser = tt_parser::ThatchParser::new();
     parser.load(tokens, &program_contents);
-    let ast = parser.parse_program()
-        .map_err(|e| e.to_string())?; // Convert ParseError to String
+    let parse_result = parser.parse_program();
+    let ast: global::ASTNode<'_>;
+    if !parse_result.1.is_empty() {
+        let errors = parse_result.1;
+        let mut buffer: String = String::new();
+        for (error_number, error) in errors.iter().enumerate() {
+            buffer.push_str(
+                &format!("{} {}{}\n{}{}", 
+                "Error number"
+                    .red()
+                    .bold(),
+                (error_number + 1)
+                    .to_string()
+                    .red()
+                    .bold(),
+                ":"
+                    .red()
+                    .bold(),
+                error,
+                if error_number < errors.len()-1 { "\n\n" } else { "" }
+            ))
+        }
+        return Err(buffer)
+    } else {
+        ast = parse_result.0;
+    }
 
     if debug {
         println!("AST: {:#?}", ast);
@@ -67,7 +91,7 @@ fn compile_file(program: &str, debug: bool, output: Option<&str>) -> Result<(), 
         .unwrap_or_else(|| program.replace(".tc", ""));
     
     let mut compiler_ = compiler::Compiler::new();
-    compiler_.compile(ast, output_filename.clone())
+    compiler_.compile(ast, &output_filename)
         .map_err(|e| e.to_string())?; // Convert compiler error to String
 
     // Compile with erl
@@ -88,7 +112,7 @@ fn compile_file(program: &str, debug: bool, output: Option<&str>) -> Result<(), 
             String::from_utf8_lossy(&erl_output.stderr)));
     }
 
-    println!("✅ Successfully compiled to: {}.beam", 
+    println!("Successfully compiled to: {}.beam", 
         output_filename
     );
 
